@@ -6,6 +6,9 @@ extern crate rocket;
 extern crate diesel;
 extern crate dotenv;
 extern crate uuid;
+extern crate rand;
+extern crate sha2;
+extern crate hex;
 
 mod pool;
 mod schema;
