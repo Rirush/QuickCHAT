@@ -1,5 +1,5 @@
 [package]
-name = "fdc_chat_server"
+name = "nullptr_chat_server"
 version = "0.1.0"
 authors = ["Rirush <raccoonrirush@gmail.com>"]
 
