@@ -3,5 +3,6 @@ table! {
         id -> Uuid,
         username -> Text,
         password -> Text,
+        salt -> Text,
     }
 }
