@@ -1,0 +1,9 @@
+[package]
+name = "fdc_chat_server"
+version = "0.1.0"
+authors = ["Rirush <raccoonrirush@gmail.com>"]
+
+[dependencies]
+rocket = "0.3.16"
+rocket_codegen = "0.3.16"
+diesel = { version = "1.3.2", features = ["postgres", "r2d2"]}
