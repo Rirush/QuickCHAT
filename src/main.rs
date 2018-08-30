@@ -1,9 +1,12 @@
 #![feature(plugin)]
+#![feature(custom_derive)]
 #![plugin(rocket_codegen)]
 
 extern crate rocket;
-#[macro_use]
-extern crate diesel;
+extern crate rocket_contrib;
+#[macro_use] extern crate diesel;
+#[macro_use] extern crate serde_derive;
+extern crate serde;
 extern crate dotenv;
 extern crate uuid;
 extern crate rand;
@@ -21,5 +24,7 @@ fn main() {
 
     rocket::ignite()
         .manage(pool::init_pool())
-        .mount("/", routes![router::index_handler]).launch();
+        .mount("/", routes![router::index_handler])
+        .mount("/user", routes![router::check_available_handler])
+        .launch();
 }
