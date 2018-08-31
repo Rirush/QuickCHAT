@@ -20,3 +20,16 @@ pub fn find_user(username: &String, conn: &PgConnection) -> Option<User> {
         }
     }
 }
+
+pub fn check_username(username: &String) -> bool {
+    use regex::Regex;
+    
+    lazy_static! {
+        static ref EXPR: Regex = Regex::new(r"^[a-zA-Z0-9]{3,32}$").unwrap();
+    }
+    EXPR.is_match(username)
+}
+
+pub fn check_password(password: &String) -> bool {
+    password.len() >= 8
+}

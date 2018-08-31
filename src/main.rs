@@ -12,6 +12,8 @@ extern crate uuid;
 extern crate rand;
 extern crate sha2;
 extern crate hex;
+#[macro_use] extern crate lazy_static;
+extern crate regex;
 
 mod pool;
 mod schema;
@@ -25,6 +27,7 @@ fn main() {
     rocket::ignite()
         .manage(pool::init_pool())
         .mount("/", routes![router::index_handler])
-        .mount("/user", routes![router::check_available_handler])
+        .mount("/user", routes![router::check_available_handler, router::authorize_user_handler,
+                                router::register_user_handler])
         .launch();
 }
