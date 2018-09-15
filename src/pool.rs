@@ -1,10 +1,12 @@
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 type PostgresPool = Pool<ConnectionManager<PgConnection>>;
-static DATABASE_URL: &'static str = env!("DATABASE_URL");
-
+use std::{env,string::String};
+lazy_static! {
+    static ref DATABASE_URL: String = env::var("DATABASE_URL").unwrap();
+}
 pub fn init_pool() -> PostgresPool {
-    let manager = ConnectionManager::<PgConnection>::new(DATABASE_URL);
+    let manager = ConnectionManager::<PgConnection>::new(DATABASE_URL.as_ref());
     Pool::new(manager).expect("failed to create db pool")
 }
 
