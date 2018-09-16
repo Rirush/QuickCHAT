@@ -64,7 +64,7 @@ pub struct AuthorizeUserResult {
 #[post("/authorize", data = "<args>")]
 pub fn authorize_user_handler(conn: Connection, args: Json<AuthorizeUserArgs>) -> Json<Result<AuthorizeUserResult>> {
     use ::logic::user_management::find_user;
-    use ::logic::security::hash_password;
+    use ::logic::security::{hash_password, generate_session_token};
 
     let args = args.0;
 
@@ -72,13 +72,28 @@ pub fn authorize_user_handler(conn: Connection, args: Json<AuthorizeUserArgs>) -
     match user {
         Some(u) => { 
             if hash_password(&args.password, &u.salt) == *u.password {
+                let token = generate_session_token();
+                
+                use std::env;
+                use redis::{Client, Commands};
+                let client = Client::open(env::var("REDIS_URL").unwrap().as_ref()).unwrap();
+                let connection = client.get_connection().unwrap();
+                
+                match connection.hset::<_, _, _, i32>(format!("session:{}:{}", &args.username, &token), "valid", "true") {
+                    Err(error) => {
+                        println!("{}", error);
+                        panic!("failed to create session, this should never happen");
+                    },
+                    Ok(_) => {}
+                }
+                
                 // TODO: Generate session token and store it somewhere
                 Json(Result {
                     error: false,
                     error_info: None,
                     result: Some(AuthorizeUserResult {
                         user_id: format!("{}", u.id),
-                        session_token: "unimplemented".to_owned()
+                        session_token: token 
                     })
                 })
             } else {
@@ -182,13 +197,28 @@ pub fn register_user_handler(conn: Connection, args: Json<RegisterUserArgs>) -> 
 
     match result {
         Ok(_) => {
-            // TODO: Generate session token and store it somewhere
+            use ::logic::security::generate_session_token;
+            let token = generate_session_token();
+                
+            use std::env;
+            use redis::{Client, Commands};
+            let client = Client::open(env::var("REDIS_URL").unwrap().as_ref()).unwrap();
+            let connection = client.get_connection().unwrap();
+                
+            match connection.hset::<_, _, _, i32>(format!("session:{}:{}", &args.username, &token), "valid", "true") {
+                Err(error) => {
+                    println!("{}", error);
+                    panic!("failed to create session, this should never happen");
+                },
+                Ok(_) => {}
+            }
+            
             Json(Result {
                 error: false,
                 error_info: None,
                 result: Some(RegisterUserResult {
                     user_id: format!("{}", new_user.id),
-                    session_token: "unimplemented".to_owned()
+                    session_token: token
                 })
             })
         },
