@@ -2,7 +2,7 @@
 .. _auth:
 
 ===================================
-Authorization and user management
+Authorization and User Management
 ===================================
 
 Concepts
