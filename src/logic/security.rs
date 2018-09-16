@@ -8,6 +8,16 @@ pub fn generate_salt() -> String {
     encode(buffer)
 }
 
+pub fn generate_session_token() -> String {
+    use rand::RngCore;
+    use rand::rngs::EntropyRng;
+    use hex::encode;
+
+    let mut buffer: [u8; 64] = [0; 64];
+    EntropyRng::new().fill_bytes(&mut buffer);
+    encode(&buffer[..])
+}
+
 pub fn hash_password(password: &String, salt: &String) -> String {
     use sha2::{Sha256,Digest};
     use hex::encode;
