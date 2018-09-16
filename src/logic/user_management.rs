@@ -25,7 +25,7 @@ pub fn check_username(username: &String) -> bool {
     use regex::Regex;
     
     lazy_static! {
-        static ref EXPR: Regex = Regex::new(r"^[a-zA-Z0-9]{3,32}$").unwrap();
+        static ref EXPR: Regex = Regex::new(r"^[a-zA-Z0-9][a-zA-Z0-9_-]{2,31}$").unwrap();
     }
     EXPR.is_match(username)
 }
