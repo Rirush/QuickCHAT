@@ -16,7 +16,7 @@ use std::ops::Deref;
 use super::guard::Authorization;
 use rocket_contrib::Json;
 #[get("/checkAvailable?<args>")]
-pub fn check_available_handler(conn: Connection, auth: Authorization, args: CheckAvailbaleArgs) -> Json<Result<CheckAvailbaleResult>> {
+pub fn check_available_handler(conn: Connection, args: CheckAvailbaleArgs) -> Json<Result<CheckAvailbaleResult>> {
     use ::logic::user_management::find_user;
     use ::logic::user_management::check_username;
     
