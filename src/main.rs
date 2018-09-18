@@ -1,6 +1,7 @@
 #![feature(plugin)]
 #![feature(custom_derive)]
 #![plugin(rocket_codegen)]
+#![feature(extern_prelude)]
 
 #![allow(proc_macro_derive_resolution_fallback)]
 
@@ -9,6 +10,7 @@ extern crate rocket_contrib;
 #[macro_use] extern crate diesel;
 #[macro_use] extern crate serde_derive;
 extern crate serde;
+#[macro_use] extern crate serde_json;
 extern crate dotenv;
 extern crate uuid;
 extern crate rand;
@@ -23,19 +25,23 @@ mod schema;
 mod router;
 mod logic;
 mod database;
+#[cfg(test)]
+mod tests;
 
 fn main() {
     dotenv::dotenv().ok();
+    construct_rocket().launch();
+}
 
+use rocket::Rocket;
+fn construct_rocket() -> Rocket {
     rocket::ignite()
         .manage(pool::init_pool())
         .mount("/", routes![router::index_handler])
         .mount("/user", routes![router::check_available_handler, router::authorize_user_handler,
                                 router::register_user_handler])
         .catch(catchers![not_found, forbidden, authorization_required])
-        .launch();
 }
-
 
 use router::{Result, ErrorInformation};
 #[derive(Serialize)]
