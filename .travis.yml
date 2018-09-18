@@ -1,0 +1,16 @@
+language: rust
+rust:
+        - nightly
+services:
+        - postgresql
+        - redis-server
+before_script:
+        - psql -c 'create database diesel;' -U postgres
+        - echo "DATABASE_URL=postgres://postgres@localhost/diesel" > .env
+        - cargo install diesel_cli --no-default-features --features=postgres
+        - diesel migration run
+        - echo "REDIS_URL=redis://localhost/" >> .env
+script:
+        - cargo build --verbose --all
+        - cargo test --verbose --all
+cache: cargo
