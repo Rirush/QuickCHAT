@@ -1,5 +1,5 @@
 [package]
-name = "nullptr_chat_server"
+name = "quickchat"
 version = "0.1.0"
 authors = ["Rirush <raccoonrirush@gmail.com>"]
 
