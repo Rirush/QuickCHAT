@@ -1,23 +1,16 @@
 
 .. _auth:
 
-===================================
-Authorization and User Management
-===================================
-
-Concepts
-========
-
-  nullptr chat uses `Token` and `Username` HTTP headers to identify session. `Username` is always lowercase and `Token` must remain completely the same as the server gave it to application. Pair of those values allows server to remember who is logged in and from which device.
-
-  .. note:: It's not recommended to use the same pair on more than one device.
+======================
+/user: User Management
+======================
 
 .. _username-rules:
 
-Checking username availablility
-===============================
+/checkUsername: Checking username availablility
+===============================================
 
-  **GET** ``/user/checkAvailable``
+  **GET** ``/user/checkUsername``
 
     This method does not require authorization. This method does not return errors.
 
@@ -41,8 +34,8 @@ Checking username availablility
       | available | Boolean     | Yes             | Shows whether username is available for registration or not |
       +-----------+-------------+-----------------+-------------------------------------------------------------+
 
-Creating an account
-===================
+/register: Creating an account
+==============================
 
   **POST** ``/user/register``
 
@@ -87,44 +80,5 @@ Creating an account
       +---------------------------+------------------------------------------------------------------------------------------+
 
 
-Logging in to an existing account
-=================================
-
-  **POST** ``/user/authorize``
-
-    This method does not require authorization. This method can return errors.
-
-    If you already created an account, then you should use this method to acquire session token.
-
-    Arguments:
-
-      +--------------------+-----------------+-------------+----------------------------------+
-      | Name               | Type            | Required?   | Description                      |
-      +====================+=================+=============+==================================+
-      | username           | String          | Yes         | Username of your account.        |
-      +--------------------+-----------------+-------------+----------------------------------+
-      | password           | String          | Yes         | Password of your account.        |
-      +--------------------+-----------------+-------------+----------------------------------+
-
-    Returns:
-
-      +-------------------+-----------------+--------------------+-----------------------------------------------------------------+
-      | Name              | Type            | Always present?    | Description                                                     |
-      +===================+=================+====================+=================================================================+
-      | user_id           | String          | Yes                | Unique 128-bit identifier of current user                       |
-      +-------------------+-----------------+--------------------+-----------------------------------------------------------------+
-      | session_token     | String          | Yes                | Session token of current user.                                  |
-      |                   |                 |                    | You will need it to perform actions that require authorization. |
-      +-------------------+-----------------+--------------------+-----------------------------------------------------------------+
-
-    Errors:
-
-      +------------------------+---------------------------------------------+
-      | Error code             | Cause                                       |
-      +========================+=============================================+
-      | ``INCORRECT_PASSWORD`` | Password doesn't match correct one.         |
-      +------------------------+---------------------------------------------+
-      | ``INCORRECT_USERNAME`` | User with this username doesn't exist.      |
-      +------------------------+---------------------------------------------+
 
 

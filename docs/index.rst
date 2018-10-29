@@ -11,7 +11,8 @@ nullptr chat API Documentation.
    :maxdepth: 2
 
    making_requests
-   authorization
+   sessions
+   users
 
 General Information
 ===================
