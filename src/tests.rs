@@ -1,6 +1,6 @@
-use ::construct_rocket;
+use construct_rocket;
+use rocket::http::{ContentType, Status};
 use rocket::local::Client;
-use rocket::http::{Status, ContentType};
 use serde_json::Value;
 
 #[test]
@@ -10,8 +10,9 @@ fn not_found_test() {
     let mut response = client.get("/404").dispatch();
 
     assert_eq!(response.status(), Status::NotFound);
-    
-    let v: Value = serde_json::from_str(&response.body_string().expect("request body")).expect("valid json body");
+
+    let v: Value = serde_json::from_str(&response.body_string().expect("request body"))
+        .expect("valid json body");
 
     assert_eq!(v["error"], true);
     assert_eq!(v["error_info"]["error_code"], "NOT_FOUND");
@@ -22,11 +23,14 @@ fn not_found_test() {
 fn username_available_test() {
     dotenv::dotenv().ok();
     let client = Client::new(construct_rocket()).expect("valid rocket instance");
-    let mut response = client.get("/user/checkAvailable?username=username").dispatch();
+    let mut response = client
+        .get("/user/checkUsername?username=username")
+        .dispatch();
 
     assert_eq!(response.status(), Status::Ok);
 
-    let v: Value = serde_json::from_str(&response.body_string().expect("request body")).expect("valid json body");
+    let v: Value = serde_json::from_str(&response.body_string().expect("request body"))
+        .expect("valid json body");
 
     assert_eq!(v["error"], false);
     assert_eq!(v["error_info"], Value::Null);
@@ -37,30 +41,32 @@ fn username_available_test() {
 fn invalid_username_test() {
     dotenv::dotenv().ok();
     let client = Client::new(construct_rocket()).expect("valid rocket instance");
-    let mut response = client.get("/user/checkAvailable?username=____").dispatch();
+    let mut response = client.get("/user/checkUsername?username=____").dispatch();
 
     assert_eq!(response.status(), Status::Ok);
 
-    let v: Value = serde_json::from_str(&response.body_string().expect("request body")).expect("valid json body");
+    let v: Value = serde_json::from_str(&response.body_string().expect("request body"))
+        .expect("valid json body");
 
     assert_eq!(v["error"], false);
     assert_eq!(v["error_info"], Value::Null);
     assert_eq!(v["result"]["available"], false);
 }
 
-#[test]                                                                                                                              
-fn short_username_test() {                                                                                                         
-    dotenv::dotenv().ok();                                                                                                           
-    let client = Client::new(construct_rocket()).expect("valid rocket instance");                                                    
-    let mut response = client.get("/user/checkAvailable?username=oo").dispatch();                                                  
-                                                                                                                                     
-    assert_eq!(response.status(), Status::Ok);                                                                                       
-                                                                                                                                     
-    let v: Value = serde_json::from_str(&response.body_string().expect("request body")).expect("valid json body");                   
-                                                                                                                                     
-    assert_eq!(v["error"], false);                                                                                                   
-    assert_eq!(v["error_info"], Value::Null);                                                                                        
-    assert_eq!(v["result"]["available"], false);                                                                                     
+#[test]
+fn short_username_test() {
+    dotenv::dotenv().ok();
+    let client = Client::new(construct_rocket()).expect("valid rocket instance");
+    let mut response = client.get("/user/checkUsername?username=oo").dispatch();
+
+    assert_eq!(response.status(), Status::Ok);
+
+    let v: Value = serde_json::from_str(&response.body_string().expect("request body"))
+        .expect("valid json body");
+
+    assert_eq!(v["error"], false);
+    assert_eq!(v["error_info"], Value::Null);
+    assert_eq!(v["result"]["available"], false);
 }
 
 #[test]
@@ -73,11 +79,16 @@ fn successful_registration_test() {
         "password":" validpassword"
     });
 
-    let mut response = client.post("/user/register").body(register_data.to_string()).header(ContentType::JSON).dispatch();
+    let mut response = client
+        .post("/user/register")
+        .body(register_data.to_string())
+        .header(ContentType::JSON)
+        .dispatch();
 
     assert_eq!(response.status(), Status::Ok);
 
-    let v: Value = serde_json::from_str(&response.body_string().expect("request body")).expect("valid json body");
+    let v: Value = serde_json::from_str(&response.body_string().expect("request body"))
+        .expect("valid json body");
 
     assert_eq!(v["error"], false);
     assert_eq!(v["error_info"], Value::Null);
@@ -98,15 +109,20 @@ fn authorization_test() {
         "password": "validpassword"
     });
 
-    let mut response = client.post("/user/authorize").body(auth_data.to_string()).header(ContentType::JSON).dispatch();
+    let mut response = client
+        .post("/session")
+        .body(auth_data.to_string())
+        .header(ContentType::JSON)
+        .dispatch();
 
     assert_eq!(response.status(), Status::Ok);
 
-    let v: Value = serde_json::from_str(&response.body_string().expect("request body")).expect("valid json body");
+    let v: Value = serde_json::from_str(&response.body_string().expect("request body"))
+        .expect("valid json body");
 
-    assert_eq!(v["error"], false);                                                                                                   
-    assert_eq!(v["error_info"], Value::Null);                                                                                        
-    assert_ne!(v["result"]["user_id"], Value::Null);                                                                                 
+    assert_eq!(v["error"], false);
+    assert_eq!(v["error_info"], Value::Null);
+    assert_ne!(v["result"]["user_id"], Value::Null);
     assert_ne!(v["result"]["session_token"], Value::Null);
 
     let incorrect_auth_data = json!({
@@ -114,11 +130,16 @@ fn authorization_test() {
         "password": "invalidpassword"
     });
 
-    let mut response = client.post("/user/authorize").body(incorrect_auth_data.to_string()).header(ContentType::JSON).dispatch();
-                                                                                                                                     
+    let mut response = client
+        .post("/session")
+        .body(incorrect_auth_data.to_string())
+        .header(ContentType::JSON)
+        .dispatch();
+
     assert_eq!(response.status(), Status::Ok);
-                                                                                                                                     
-    let v: Value = serde_json::from_str(&response.body_string().expect("request body")).expect("valid json body");
+
+    let v: Value = serde_json::from_str(&response.body_string().expect("request body"))
+        .expect("valid json body");
 
     assert_eq!(v["error"], true);
     assert_eq!(v["error_info"]["error_code"], "INCORRECT_PASSWORD");
@@ -126,45 +147,57 @@ fn authorization_test() {
 
     delete_user("authtestuser");
 
-    let mut response = client.post("/user/authorize").body(incorrect_auth_data.to_string()).header(ContentType::JSON).dispatch();    
-                                                                                                                                     
-    assert_eq!(response.status(), Status::Ok);                                                                                       
-                                                                                                                                     
-    let v: Value = serde_json::from_str(&response.body_string().expect("request body")).expect("valid json body");                   
-                                                                                                                                     
-    assert_eq!(v["error"], true);                                                                                                    
-    assert_eq!(v["error_info"]["error_code"], "INCORRECT_USERNAME");                                                                 
-    assert_eq!(v["result"], Value::Null); 
+    let mut response = client
+        .post("/session")
+        .body(incorrect_auth_data.to_string())
+        .header(ContentType::JSON)
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Ok);
+
+    let v: Value = serde_json::from_str(&response.body_string().expect("request body"))
+        .expect("valid json body");
+
+    assert_eq!(v["error"], true);
+    assert_eq!(v["error_info"]["error_code"], "INCORRECT_USERNAME");
+    assert_eq!(v["result"], Value::Null);
 }
 
 fn delete_user(u: &str) {
-    use diesel::{PgConnection, RunQueryDsl, ExpressionMethods, Connection, QueryDsl};
-    use std::env;
+    use diesel::{Connection, ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl};
     use schema::users::{self, columns::username};
+    use std::env;
 
-    let connection = PgConnection::establish(&env::var("DATABASE_URL").unwrap()).expect("pg connection");
-    diesel::delete(users::table.filter(username.eq(u))).execute(&connection).unwrap();
+    let connection =
+        PgConnection::establish(&env::var("DATABASE_URL").unwrap()).expect("pg connection");
+    diesel::delete(users::table.filter(username.eq(u)))
+        .execute(&connection)
+        .unwrap();
 }
 
 fn create_user(u: String, p: String) {
-    use logic::security::{generate_salt, hash_password};
-    use diesel::{PgConnection, RunQueryDsl, Connection};                                                
-    use std::env;
     use database::NewUser;
+    use diesel::{Connection, PgConnection, RunQueryDsl};
+    use logic::security::{generate_salt, hash_password};
     use schema::users;
+    use std::env;
 
     let salt = generate_salt();
     let hashed_password = hash_password(&p, &salt);
-    
+
     use uuid::Uuid;
     let new_user = NewUser {
         id: &Uuid::new_v4(),
         username: &u,
         password: &hashed_password,
-        salt: &salt
+        salt: &salt,
     };
 
-    let connection = PgConnection::establish(&env::var("DATABASE_URL").unwrap()).expect("pg connection");
+    let connection =
+        PgConnection::establish(&env::var("DATABASE_URL").unwrap()).expect("pg connection");
 
-    diesel::insert_into(users::table).values(&new_user).execute(&connection).unwrap();
+    diesel::insert_into(users::table)
+        .values(&new_user)
+        .execute(&connection)
+        .unwrap();
 }

@@ -1,180 +1,75 @@
-use super::Result;
 use super::ErrorInformation;
+use super::Result;
 
 #[derive(FromForm)]
 pub struct CheckAvailbaleArgs {
-    username: String
+    username: String,
 }
 
 #[derive(Serialize)]
 pub struct CheckAvailbaleResult {
-    available: bool
+    available: bool,
 }
 
-use super::Connection;
-use std::ops::Deref;
 use super::guard::Authorization;
+use super::Connection;
 use rocket_contrib::Json;
-#[get("/checkAvailable?<args>")]
-pub fn check_available_handler(conn: Connection, args: CheckAvailbaleArgs) -> Json<Result<CheckAvailbaleResult>> {
-    use ::logic::user_management::find_user;
-    use ::logic::user_management::check_username;
-    
+use std::ops::Deref;
+#[get("/checkUsername?<args>")]
+pub fn check_username_handler(
+    conn: Connection,
+    args: CheckAvailbaleArgs,
+) -> Json<Result<CheckAvailbaleResult>> {
+    use logic::user_management::{check_username, find_user};
+
     if !check_username(&args.username) {
-        return Json(Result {
-            error: false,
-            error_info: None,
-            result: Some(CheckAvailbaleResult {
-                available: false
-            })
-        })
+        return method_success![CheckAvailbaleResult { available: false }];
     }
 
     let user = find_user(&args.username.to_lowercase(), &conn.deref());
     match user {
-        Some(_) => Json(Result {
-            error: false,
-            error_info: None,
-            result: Some(CheckAvailbaleResult {
-                available: false
-            })
-        }),
-        None => Json(Result {
-            error: false,
-            error_info: None,
-            result: Some(CheckAvailbaleResult {
-                available: true
-            })
-        })
-    }
-}
-
-#[derive(Deserialize)]
-pub struct AuthorizeUserArgs {
-    username: String,
-    password: String
-}
-
-#[derive(Serialize)]
-pub struct AuthorizeUserResult {
-    user_id: String,
-    session_token: String
-}
-
-#[post("/authorize", data = "<args>")]
-pub fn authorize_user_handler(conn: Connection, args: Json<AuthorizeUserArgs>) -> Json<Result<AuthorizeUserResult>> {
-    use ::logic::user_management::find_user;
-    use ::logic::security::{hash_password, generate_session_token};
-
-    let args = args.0;
-
-    let user = find_user(&args.username.to_lowercase(), &conn.deref());
-    match user {
-        Some(u) => { 
-            if hash_password(&args.password, &u.salt) == *u.password {
-                let token = generate_session_token();
-                
-                use std::env;
-                use redis::{Client, Commands};
-                let client = Client::open(env::var("REDIS_URL").unwrap().as_ref()).unwrap();
-                let connection = client.get_connection().unwrap();
-                
-                match connection.hset::<_, _, _, i32>(format!("session:{}:{}", &args.username, &token), "valid", "true") {
-                    Err(error) => {
-                        println!("{}", error);
-                        panic!("failed to create session, this should never happen");
-                    },
-                    Ok(_) => {}
-                }
-                
-                // TODO: Generate session token and store it somewhere
-                Json(Result {
-                    error: false,
-                    error_info: None,
-                    result: Some(AuthorizeUserResult {
-                        user_id: format!("{}", u.id),
-                        session_token: token 
-                    })
-                })
-            } else {
-                Json(Result {
-                    error: true,
-                    error_info: Some(ErrorInformation {
-                        description: "Incorrect password".to_owned(),
-                        error_code: "INCORRECT_PASSWORD".to_owned()
-                    }),
-                    result: None
-                })
-            }
-        },
-        None => {
-            Json(Result {
-                error: true,
-                error_info: Some(ErrorInformation {
-                    description: "No such user found".to_owned(),
-                    error_code: "INCORRECT_USERNAME".to_owned()
-                }),
-                result: None
-            })
-        }
+        Some(_) => method_success![CheckAvailbaleResult { available: false }],
+        None => method_success![CheckAvailbaleResult { available: true }],
     }
 }
 
 #[derive(Deserialize)]
 pub struct RegisterUserArgs {
     username: String,
-    password: String
+    password: String,
 }
 
 #[derive(Serialize)]
 pub struct RegisterUserResult {
     user_id: String,
-    session_token: String
+    session_token: String,
 }
 
 #[post("/register", data = "<args>")]
-pub fn register_user_handler(conn: Connection, args: Json<RegisterUserArgs>) -> Json<Result<RegisterUserResult>> {
-    use ::logic::security::hash_password;
-    use ::logic::security::generate_salt;
-    use ::logic::user_management::find_user;
-    use ::logic::user_management::check_username;
-    use ::logic::user_management::check_password;
-    use ::database::NewUser;
+pub fn register_user_handler(
+    conn: Connection,
+    args: Json<RegisterUserArgs>,
+) -> Json<Result<RegisterUserResult>> {
+    use database::NewUser;
+    use logic::security::{generate_salt, hash_password};
+    use logic::user_management::{check_password, check_username, find_user};
 
     let args = args.0;
 
     if !check_username(&args.username) {
-        return Json(Result {
-            error: true,
-            error_info: Some(ErrorInformation {
-                description: "Invalid username".to_owned(),
-                error_code: "INVALID_USERNAME".to_owned()
-            }),
-            result: None
-        })
+        return method_error![code = "INVALID_USERNAME", details = "Invalid username"];
     }
 
     if !check_password(&args.password) {
-        return Json(Result {
-            error: true,
-            error_info: Some(ErrorInformation {
-                description: "Password is too short".to_owned(),
-                error_code: "INVALID_PASSWORD".to_owned()
-            }),
-            result: None
-        })
+        return method_error![code = "INVALID_PASSWORD", details = "Password is too short"];
     }
 
     let user = find_user(&args.username.to_lowercase(), &conn.deref());
     if let Some(_) = user {
-        return Json(Result {
-            error: true,
-            error_info: Some(ErrorInformation {
-                description: "Username already taken".to_owned(),
-                error_code: "USERNAME_TAKEN".to_owned()
-            }),
-            result: None
-        })
+        return method_error![
+            code = "USERNAME_TAKEN",
+            details = "Username is already taken"
+        ];
     }
 
     let salt = generate_salt();
@@ -185,53 +80,46 @@ pub fn register_user_handler(conn: Connection, args: Json<RegisterUserArgs>) -> 
         id: &Uuid::new_v4(),
         username: &args.username.to_lowercase(),
         password: &hashed_password,
-        salt: &salt
+        salt: &salt,
     };
 
-    use ::schema::users;
     use diesel::insert_into;
     use diesel::RunQueryDsl;
+    use schema::users;
     let result = insert_into(users::table)
         .values(&new_user)
         .execute(conn.deref());
 
     match result {
         Ok(_) => {
-            use ::logic::security::generate_session_token;
+            use logic::security::generate_session_token;
             let token = generate_session_token();
-                
-            use std::env;
+
             use redis::{Client, Commands};
+            use std::env;
             let client = Client::open(env::var("REDIS_URL").unwrap().as_ref()).unwrap();
             let connection = client.get_connection().unwrap();
-                
-            match connection.hset::<_, _, _, i32>(format!("session:{}:{}", &args.username, &token), "valid", "true") {
+
+            match connection.hset::<_, _, _, i32>(
+                format!("session:{}:{}", &args.username, &token),
+                "valid",
+                "true",
+            ) {
                 Err(error) => {
                     println!("{}", error);
                     panic!("failed to create session, this should never happen");
-                },
+                }
                 Ok(_) => {}
             }
-            
-            Json(Result {
-                error: false,
-                error_info: None,
-                result: Some(RegisterUserResult {
-                    user_id: format!("{}", new_user.id),
-                    session_token: token
-                })
-            })
-        },
-        Err(_) => {
-            Json(Result {
-                error: true,
-                error_info: Some(ErrorInformation {
-                    description: "Internal server error".to_owned(),
-                    error_code: "INTERNAL_SERVER_ERROR".to_owned()
-                }),
-                result: None
-            })
-        }
-    }
 
+            method_success![RegisterUserResult {
+                user_id: format!("{}", new_user.id),
+                session_token: token
+            }]
+        }
+        Err(_) => method_error![
+            code = "INTERNAL_SERVER_ERROR",
+            details = "Internal server error"
+        ],
+    }
 }

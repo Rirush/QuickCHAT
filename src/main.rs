@@ -1,30 +1,33 @@
 #![feature(plugin)]
 #![feature(custom_derive)]
 #![plugin(rocket_codegen)]
-#![feature(extern_prelude)]
-
 #![allow(proc_macro_derive_resolution_fallback)]
 
 extern crate rocket;
 extern crate rocket_contrib;
-#[macro_use] extern crate diesel;
-#[macro_use] extern crate serde_derive;
+#[macro_use]
+extern crate diesel;
+#[macro_use]
+extern crate serde_derive;
 extern crate serde;
-#[macro_use] extern crate serde_json;
+#[macro_use]
+extern crate serde_json;
 extern crate dotenv;
-extern crate uuid;
+extern crate hex;
 extern crate rand;
 extern crate sha2;
-extern crate hex;
-#[macro_use] extern crate lazy_static;
-extern crate regex;
+extern crate uuid;
+#[macro_use]
+extern crate lazy_static;
 extern crate redis;
+extern crate regex;
 
-mod pool;
-mod schema;
-mod router;
-mod logic;
 mod database;
+mod logic;
+mod pool;
+#[macro_use]
+mod router;
+mod schema;
 #[cfg(test)]
 mod tests;
 
@@ -38,48 +41,33 @@ fn construct_rocket() -> Rocket {
     rocket::ignite()
         .manage(pool::init_pool())
         .mount("/", routes![router::index_handler])
-        .mount("/user", routes![router::check_available_handler, router::authorize_user_handler,
-                                router::register_user_handler])
+        .mount(
+            "/user",
+            routes![
+                router::check_username_handler,
+                router::register_user_handler
+            ],
+        )
+        .mount("/session", routes![router::create_session_handler])
         .catch(catchers![not_found, forbidden, authorization_required])
 }
 
-use router::{Result, ErrorInformation};
+use router::{ErrorInformation, Result};
 #[derive(Serialize)]
 struct EmptyResult();
 
 use rocket_contrib::Json;
 #[catch(404)]
 fn not_found() -> Json<Result<EmptyResult>> {
-    Json(Result {
-        error: true,
-        error_info: Some(ErrorInformation {
-            description: "No such method found".to_owned(),
-            error_code: "NOT_FOUND".to_owned()
-        }),
-        result: None
-    })
+    method_error![code = "NOT_FOUND", details = "No such method found"]
 }
 
 #[catch(403)]
 fn forbidden() -> Json<Result<EmptyResult>> {
-    Json(Result {
-        error: true,
-        error_info: Some(ErrorInformation {
-            description: "Failed to authorize access".to_owned(),
-            error_code: "FORBIDDEN".to_owned()
-        }),
-        result: None
-    })
+    method_error![code = "FORBIDDEN", details = "Failed to authorize access"]
 }
 
 #[catch(401)]
 fn authorization_required() -> Json<Result<EmptyResult>> {
-    Json(Result {
-        error: true,
-        error_info: Some(ErrorInformation {
-            description: "Authorization required".to_owned(),
-            error_code: "UNAUTHORIZED".to_owned()
-        }),
-        result: None
-    })
+    method_error![code = "UNAUTHORIZED", details = "Authorization required"]
 }

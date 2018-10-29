@@ -1,4 +1,4 @@
-use ::schema::*;
+use schema::*;
 
 use uuid::Uuid;
 
@@ -11,7 +11,7 @@ pub struct User {
 }
 
 #[derive(Insertable)]
-#[table_name="users"]
+#[table_name = "users"]
 pub struct NewUser<'a> {
     pub id: &'a Uuid,
     pub username: &'a String,
