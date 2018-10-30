@@ -19,7 +19,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'nullptr chat'
+project = 'QuickCHAT'
 copyright = '2018, Rirush'
 author = 'Rirush'
 
