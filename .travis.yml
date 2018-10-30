@@ -6,8 +6,9 @@ services:
         - redis-server
 before_script:
         - psql -c 'create database diesel;' -U postgres
+        - psql -c 'create extension if not exists "uuid-ossp";' -U postgres diesel
         - echo "DATABASE_URL=postgres://postgres@localhost/diesel" > .env
-        - cargo install diesel_cli --no-default-features --features=postgres
+        - cargo install diesel_cli --force --no-default-features --features=postgres
         - diesel migration run
         - echo "REDIS_URL=redis://localhost/" >> .env
 script:
