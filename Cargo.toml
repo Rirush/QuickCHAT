@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Rirush <raccoonrirush@gmail.com>"]
 
 [dependencies]
-rocket = "0.3.16"
+rocket = "0.3"
 rocket_codegen = "0.3.16"
 rocket_contrib = { version = "0.3.16", features = ["json"] }
 serde = "1.0.75"

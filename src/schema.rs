@@ -1,5 +1,5 @@
 table! {
-    content (id) {
+    contents (id) {
         id -> Uuid,
         content -> Bytea,
     }
@@ -8,13 +8,13 @@ table! {
 table! {
     messages (id) {
         id -> Uuid,
-        sender -> Nullable<Uuid>,
+        sender -> Uuid,
         recipients -> Array<Uuid>,
         message -> Nullable<Text>,
         contents_type -> Text,
-        content -> Nullable<Array<Uuid>>,
-        date_sent -> Nullable<Date>,
-        deleted -> Nullable<Bool>,
+        contents -> Nullable<Array<Uuid>>,
+        date_sent -> Timestamp,
+        deleted -> Bool,
     }
 }
 
@@ -37,7 +37,7 @@ joinable!(messages -> message_types (contents_type));
 joinable!(messages -> users (sender));
 
 allow_tables_to_appear_in_same_query!(
-    content,
+    contents,
     messages,
     message_types,
     users,
