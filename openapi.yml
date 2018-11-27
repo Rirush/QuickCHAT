@@ -1,0 +1,280 @@
+openapi: 3.0.0
+info:
+  title: QuickCHAT
+  description: RESTful chat service.
+  version: 1.0.0
+
+#servers:
+#  - url: https://api.qc.foxdogcoon.me/
+
+paths:
+  /user:
+    post:
+      tags:
+        - Users
+      summary: "Creates new user."
+      #description: ""
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticationData'
+      responses:
+        "200":
+          description: A JSON object with session token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        "400":
+          $ref: '#/components/responses/ExecutionError'
+    get:
+      tags:
+        - Users
+      summary: "Retrives current user information."
+      security: 
+        - Auth: []
+      responses:
+        "200":
+          description: A JSON object with requested information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    patch:
+      tags:
+        - Users
+      summary: "Updates user information."
+      security: 
+        - Auth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                username:
+                  type: string
+                  example: RegularUser
+                first_name:
+                  type: string
+                  example: John
+                last_name:
+                  type: string
+                  example: Johnson
+                bio:
+                  type: string
+                  example: 23 yo. designer from San Francisco
+                profile_picture:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: A JSON object with updated user information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        "400":
+          $ref: '#/components/responses/ExecutionError'
+    delete:
+      tags:
+        - Users
+      summary: "Removes current user."
+      security: 
+        - Auth: []
+      parameters:
+        - name: password
+          in: query
+          description: User's password
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Empty body.
+        "400":
+          $ref: '#/components/responses/ExecutionError'
+  /user/{username}:
+    get:
+      tags:
+        - Users
+      summary: "Retrieves user information."
+      security: 
+        - Auth: []
+      parameters: 
+        - name: username
+          in: path
+          description: Username of user to return information.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A JSON object with requested information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        "400":
+          $ref: '#/components/responses/ExecutionError'
+          
+  /session:
+    post:
+      tags:
+        - Sessions
+      summary: "Authorizes user and creates session."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionAuthenticationData'
+      responses:
+        "200":
+          description: "A JSON object with session token."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        "400":
+          $ref: '#/components/responses/ExecutionError'
+    get:
+      tags:
+        - Sessions
+      summary: "Retrieves list of all active sessions."
+      security:
+        - Auth: []
+      responses:
+        "200":
+          description: "A JSON array with active sessions."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    platform:
+                      type: string
+                      example: Windows
+                    client:
+                      type: string
+                      example: Official QuickCHAT client
+                    auth_time:
+                      type: integer
+                    ip:
+                      type: string
+                      example: 127.0.0.1
+    delete:  
+      tags:
+        - Sessions
+      summary: "Revoke current session."
+      security:
+        - Auth: []
+      responses:
+        "200":
+          description: "Empty body"
+  /session/{id}:
+    delete:
+      tags:
+        - Sessions
+      summary: "Revoke specified session."
+      security:
+        - Auth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: "Empty body"
+        "400":
+          $ref: '#/components/responses/ExecutionError'
+  
+components:
+  schemas:
+    AuthenticationData:
+      type: object
+      properties:
+        username:
+          type: string
+          example: RegularUser
+        password:
+          type: string
+          example: P@ssw0rd
+    Token:
+      type: object
+      properties:
+        token:
+          type: string
+          example: "jx9Pkv/ac8v/bwUwQh5qWnbSeJ1CoG9ovgty9pKoK2w="
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+          example: "INCORRECT_PASSWORD"
+        description:
+          type: string
+          description: Human-readable error description
+          example: "Entered password is incorrect."
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+          example: RegularUser
+        first_name:
+          type: string
+          example: John
+        last_name:
+          type: string
+          example: Johnson
+        bio:
+          type: string
+          example: 23 yo. designer from San Francisco
+        online:
+          type: boolean
+        profile_picture:
+          type: string
+          format: uuid
+    SessionAuthenticationData:
+      type: object
+      properties:
+        username:
+          type: string
+          example: RegularUser
+        password:
+          type: string
+          example: P@ssw0rd
+        platform:
+          type: string
+          example: Windows
+        client:
+          type: string
+          example: Official QuickCHAT client
+          
+  responses:
+    ExecutionError:
+      description: A JSON object with error information.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+
+
