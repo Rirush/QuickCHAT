@@ -3,7 +3,8 @@ info:
   title: QuickCHAT
   description: RESTful chat service.
   version: 1.0.0
-
+  license:
+    name: BSD-3-Clause
 #servers:
 #  - url: https://api.qc.foxdogcoon.me/
 
@@ -201,7 +202,201 @@ paths:
           description: "Empty body"
         "400":
           $ref: '#/components/responses/ExecutionError'
-  
+    
+  /message:
+    post:
+      tags:
+        - Messages
+      summary: "Sends a message."
+      security:
+        - Auth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recipient:
+                  type: string
+                  format: uuid
+                message:
+                  type: string
+                  example: "Hey!"
+                reply_to:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: "A JSON object with sent message UUID and date."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  time:
+                    type: integer
+                    format: timestamp
+        "400":
+          $ref: '#/components/responses/ExecutionError'
+    get:
+      tags:
+        - Messages
+      summary: "Retrieves messages."
+      security:
+        - Auth: []
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          description: Retrieve messages only from certain user.
+          required: false
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            format: int64
+          description: Limit amount of messages to retrieve.
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            format: int64
+          description: Skip some messages.
+      responses:
+        "200":
+          description: "Array of messages."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        "400":
+          $ref: '#/components/responses/ExecutionError'
+  /message/{id}:
+    get:
+      tags:
+        - Messages
+      summary: "Retrieves specific message."
+      security:
+        - Auth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: UUID of message.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: "One message."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        "400":
+          $ref: '#/components/responses/ExecutionError'
+    patch:
+      tags:
+        - Messages
+      summary: "Edits sent message."
+      security:
+        - Auth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID of sent message
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Heyo!"
+      responses:
+        "200":
+          description: "Empty body."
+        "400":
+          $ref: '#/components/responses/ExecutionError'
+    delete:
+      tags:
+        - Messages
+      summary: "Removes sent message."
+      security:
+        - Auth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID of sent message
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: "Empty body."
+        "400":
+          $ref: '#/components/responses/ExecutionError'
+          
+  /status/online:
+    patch:
+      tags:
+        - Statuses
+      summary: "Updates online status of current user."
+      security:
+        - Auth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                online:
+                  type: boolean
+      responses:
+        "200":
+          description: "Empty body."
+  /status/updates:
+    get:
+      tags:
+        - Statuses
+      summary: "Retrieves updates from timestamp to current time."
+      security:
+        - Auth: []
+      parameters:
+        - name: "timestamp"
+          schema:
+            type: integer
+            format: int64
+          in: "query"
+          required: true
+      responses:
+        "200":
+          description: "Array of messages."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Updates'
+        "400":
+          $ref: '#/components/responses/ExecutionError'
+      
 components:
   schemas:
     AuthenticationData:
@@ -212,6 +407,7 @@ components:
           example: RegularUser
         password:
           type: string
+          format: password
           example: P@ssw0rd
     Token:
       type: object
@@ -260,6 +456,7 @@ components:
           example: RegularUser
         password:
           type: string
+          format: password
           example: P@ssw0rd
         platform:
           type: string
@@ -267,7 +464,39 @@ components:
         client:
           type: string
           example: Official QuickCHAT client
-          
+    Message:
+      type: object
+      properties:
+        recipient:
+          type: string
+          format: uuid
+        message:
+          type: string
+          example: "Hey!"
+        reply_to:
+          type: string
+          format: uuid
+        sent_at:
+          type: integer
+          format: timestamp
+    Updates:
+      type: array
+      items:
+        type: object
+        properties:
+          recipient:
+            type: string
+            format: uuid
+          message:
+            type: string
+            example: "Hey!"
+          reply_to:
+            type: string
+            format: uuid
+          sent_at:
+            type: integer
+            format: timestamp
+      
   responses:
     ExecutionError:
       description: A JSON object with error information.
