@@ -5,69 +5,64 @@
 
 extern crate rocket;
 extern crate rocket_contrib;
-#[macro_use]
-extern crate diesel;
+extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
 #[macro_use]
 extern crate serde_json;
 extern crate dotenv;
+#[macro_use]
+extern crate diesel;
 extern crate hex;
 extern crate rand;
+extern crate regex;
 extern crate sha2;
 extern crate uuid;
 #[macro_use]
 extern crate lazy_static;
 extern crate redis;
-extern crate regex;
 
-mod database;
-mod logic;
-mod pool;
+// Module with macros
 #[macro_use]
-mod router;
-mod schema;
+mod macros;
+// Module with RESTful API methods
+mod api;
+// Module with API logic
+mod logic;
+// Module with database-related operations
+mod data;
+// Module with tests
 #[cfg(test)]
 mod tests;
+// Module with database schemas (diesel)
+mod schema;
 
 fn main() {
-    dotenv::dotenv().ok();
-    construct_rocket().launch();
-}
-
-use rocket::Rocket;
-fn construct_rocket() -> Rocket {
+    use api::messages::*;
+    use api::sessions::*;
+    use api::statuses::*;
+    use api::users::*;
     rocket::ignite()
-        .manage(pool::init_pool())
-        .mount("/", routes![router::index_handler])
         .mount(
-            "/user",
+            "/",
             routes![
-                router::check_username_handler,
-                router::register_user_handler
+                create_user,
+                get_current_user,
+                update_current_user,
+                delete_user,
+                get_user,
+                update_online,
+                get_updates,
+                send_message,
+                get_all_messages,
+                get_message,
+                update_message,
+                delete_message,
+                create_session,
+                get_all_sessions,
+                delete_current_session,
+                delete_session
             ],
         )
-        .mount("/session", routes![router::create_session_handler])
-        .catch(catchers![not_found, forbidden, authorization_required])
-}
-
-use router::{ErrorInformation, Result};
-#[derive(Serialize)]
-struct EmptyResult();
-
-use rocket_contrib::Json;
-#[catch(404)]
-fn not_found() -> Json<Result<EmptyResult>> {
-    method_error![code = "NOT_FOUND", details = "No such method found"]
-}
-
-#[catch(403)]
-fn forbidden() -> Json<Result<EmptyResult>> {
-    method_error![code = "FORBIDDEN", details = "Failed to authorize access"]
-}
-
-#[catch(401)]
-fn authorization_required() -> Json<Result<EmptyResult>> {
-    method_error![code = "UNAUTHORIZED", details = "Authorization required"]
+        .launch();
 }

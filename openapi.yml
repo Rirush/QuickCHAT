@@ -56,9 +56,6 @@ paths:
             schema:
               type: object
               properties:
-                id:
-                  type: string
-                  format: uuid
                 username:
                   type: string
                   example: RegularUser
@@ -467,6 +464,9 @@ components:
     Message:
       type: object
       properties:
+        sender:
+          type: string
+          format: uuid
         recipient:
           type: string
           format: uuid
