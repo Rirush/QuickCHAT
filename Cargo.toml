@@ -1,0 +1,15 @@
+[package]
+name = "quickchat"
+version = "0.1.0"
+authors = ["Nick Rirush <RaccoonRirush@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+websocket = "0.22.1"
+rusqlite = "0.15.0"
+simplelog = "0.5.3"
+log = "0.4.6"
+structopt = "0.2.14"
+threadpool = "1.7.1"
+r2d2 = "0.8.3"
+r2d2_sqlite = "0.7.0"
