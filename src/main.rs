@@ -1,13 +1,25 @@
+#![feature(proc_macro_hygiene)]
+
 #[macro_use]
 extern crate log;
-extern crate structopt;
-extern crate rusqlite;
-extern crate simplelog;
-extern crate websocket;
-extern crate threadpool;
 extern crate r2d2;
 extern crate r2d2_sqlite;
+extern crate rusqlite;
+extern crate serde;
+extern crate simplelog;
+extern crate structopt;
+extern crate threadpool;
+extern crate websocket;
+#[macro_use]
+extern crate serde_derive;
+extern crate rmp_serde;
+extern crate serde_json;
+#[macro_use]
+extern crate handler_macro;
 
+mod command;
+
+use crate::command::Dispatcher;
 use std::fs::File;
 use structopt::StructOpt;
 
@@ -99,7 +111,7 @@ fn main() {
                 match request.reject() {
                     Ok(_) => {
                         trace!("Rejected connection successfully");
-                    },
+                    }
                     Err(e) => {
                         // I don't know when this kind of error may happen
                         error!("Error occurred while rejecting connection: {}", e.1);
@@ -112,6 +124,10 @@ fn main() {
                         let client_ip = client.peer_addr().unwrap();
                         info!("Received connection from {}", client_ip);
                         if let Ok((mut rx, mut tx)) = client.split() {
+                            use crate::command::Context;
+                            let mut ctx = Context::new();
+                            // Load command processors
+                            let dispatcher = Dispatcher::default();
                             for message in rx.incoming_messages() {
                                 match message {
                                     Ok(message) => {
@@ -125,22 +141,59 @@ fn main() {
                                                 if let Err(e) = tx.send_message(&msg) {
                                                     error!("Error occurred while responding to ping: {}", e)
                                                 }
-                                            },
+                                            }
                                             // Close connection if peer is asked for it
                                             OwnedMessage::Close(_) => {
                                                 debug!("Message is close");
                                                 let msg = OwnedMessage::Close(None);
-                                                info!("Peer {} asked to close connection", client_ip);
+                                                info!(
+                                                    "Peer {} asked to close connection",
+                                                    client_ip
+                                                );
                                                 if let Err(e) = tx.send_message(&msg) {
                                                     error!("Error occurred while responding to close message: {}", e);
                                                 }
                                                 break;
-                                            },
+                                            }
                                             // Process binary messages
-                                            OwnedMessage::Binary(_data) => {
+                                            OwnedMessage::Binary(data) => {
                                                 debug!("Message is binary");
-                                                // Parse message and process it
-                                            },
+                                                debug!("Processing message");
+                                                let result =
+                                                    dispatcher.handle_binary(&mut ctx, &data);
+                                                match result {
+                                                    Ok(response) => {
+                                                        debug!("Processing returned ok");
+                                                        use crate::command::Action::{
+                                                            Continue, Terminate,
+                                                        };
+                                                        match response {
+                                                            Continue(data) => {
+                                                                info!("Command processor asked to continue connection");
+                                                                if let Err(e) = tx.send_message(
+                                                                    &OwnedMessage::Binary(data),
+                                                                ) {
+                                                                    error!("Error ocurred while responding to message: {}", e);
+                                                                } else {
+                                                                    info!("Message has been successfully processed");
+                                                                }
+                                                            }
+                                                            Terminate => {
+                                                                info!("Command processor asked to terminate connection");
+                                                                if let Err(e) = tx.send_message(
+                                                                    &OwnedMessage::Close(None),
+                                                                ) {
+                                                                    error!("Error occurred while notifying peer about termination: {}", e);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    Err(e) => {
+                                                        debug!("Processing returned error");
+                                                        //warn!("Command processor returned error after processing message: {}", e);
+                                                    }
+                                                }
+                                            }
                                             // Terminate connection on everything else
                                             _ => {
                                                 debug!("Message is unknown, this is unsupported");
@@ -152,7 +205,7 @@ fn main() {
                                                 break;
                                             }
                                         }
-                                    },
+                                    }
                                     Err(e) => {
                                         error!("Error occurred while unwrapping message: {}", e);
                                     }
@@ -161,7 +214,7 @@ fn main() {
                         } else {
                             error!("Failed to split socket into rx and tx");
                         }
-                    },
+                    }
                     Err(e) => {
                         // No idea how we can fail acception of a connection
                         error!("Error occurred while accepting connection: {}", e.1)
