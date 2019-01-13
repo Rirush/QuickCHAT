@@ -29,6 +29,18 @@ pub enum Command {
     Authorize = 1,
     /// Destroy current session and close connection.
     DestroySession = 2,
+    /// Find user by username or ID.
+    FindUser = 3,
+    /// Send message to user or chat.
+    SendMessage = 4,
+    /// Edit sent message.
+    EditMessage = 5,
+    /// List all messages in chat.
+    ListMessages = 6,
+    /// Delete sent message.
+    DeleteMessage = 7,
+    /// List all available chats and users.
+    ListChats = 8,
 }
 
 impl Command {
@@ -38,7 +50,7 @@ impl Command {
         let mut arr: [u8; 2] = [0; 2];
         arr.copy_from_slice(&data[0..2]);
         let num = unsafe { std::mem::transmute::<[u8; 2], u16>(arr) };
-        if num >= 1 && num <= 2 {
+        if num >= 1 && num <= 8 {
             Ok(unsafe { std::mem::transmute::<u16, Command>(num) })
         } else {
             Err(Error::UnkownCommand)
@@ -86,6 +98,12 @@ impl Default for Dispatcher {
         let mut d = Dispatcher::new();
         d.register(Command::Authorize, handler_fn!(authorize));
         d.register(Command::DestroySession, handler_fn!(destroy_session));
+        d.register(Command::FindUser, handler_fn!(find_user));
+        d.register(Command::SendMessage, handler_fn!(send_message));
+        d.register(Command::EditMessage, handler_fn!(edit_message));
+        d.register(Command::ListMessages, handler_fn!(list_messages));
+        d.register(Command::DeleteMessage, handler_fn!(delete_message));
+        d.register(Command::ListChats, handler_fn!(list_chats));
         d
     }
 }
