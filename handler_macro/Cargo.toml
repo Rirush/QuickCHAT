@@ -1,0 +1,13 @@
+[package]
+name = "handler_macro"
+version = "0.1.0"
+authors = ["Nick Rirush <RaccoonRirush@gmail.com>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "0.15.24", features = ["full"] }
+quote = "0.6.10"
+proc-macro2 = "0.4.24"
