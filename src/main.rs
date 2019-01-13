@@ -188,7 +188,8 @@ fn main() {
                                                             }
                                                         }
                                                     }
-                                                    Err(e) => {
+                                                    Err(_e) => {
+                                                        // TODO: Handle this error and return it to client
                                                         debug!("Processing returned error");
                                                         //warn!("Command processor returned error after processing message: {}", e);
                                                     }
